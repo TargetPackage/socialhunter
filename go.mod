@@ -1,4 +1,4 @@
-module github.com/utkusen/socialhunter
+module github.com/TargetPackage/socialhunter
 
 go 1.18
 

@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,7 +41,7 @@ func main() {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	file, err := ioutil.ReadFile(*urlFile)
+	file, err := os.ReadFile(*urlFile)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -78,6 +78,7 @@ func stringInSlice(a string, list *[]string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -90,38 +91,47 @@ func checkTakeover(socialLinks []string) {
 			continue
 		}
 		alreadyChecked = append(alreadyChecked, socialLink)
-		if len(socialLink) > 60 || strings.Contains(socialLink, "intent/tweet") || strings.Contains(socialLink, "twitter.com/share") || strings.Contains(socialLink, "twitter.com/privacy") || strings.Contains(socialLink, "facebook.com/home") || strings.Contains(socialLink, "instagram.com/p/") {
+
+		// Ignore likely false positives
+		if len(socialLink) > 60 || strings.Contains(socialLink, "intent/tweet") || strings.Contains(socialLink, "(?:twitter|x).com/share") || strings.Contains(socialLink, "(?:twitter|x).com/privacy") || strings.Contains(socialLink, "facebook.com/home") || strings.Contains(socialLink, "instagram.com/p/") {
 			continue
 		}
+
 		u, err := url.Parse(socialLink)
 		if err != nil {
 			continue
 		}
+
 		domain := u.Host
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
+
+		// Facebook (Meta)
 		if strings.Contains(domain, "facebook.com") {
 			if strings.Count(socialLink, ".") > 1 {
 				socialLink = "https://" + strings.Split(socialLink, ".")[1] + "." + strings.Split(socialLink, ".")[2]
 			}
+
 			socialLink = strings.Replace(socialLink, "www.", "", -1)
 			tempLink := strings.Replace(socialLink, "facebook.com", "tr-tr.facebook.com", -1)
 			resp, err := http.Get(tempLink)
 			if err != nil {
 				continue
 			}
+
 			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				continue
 			}
-			if strings.Contains(string(body), "Sayfa Bulunamadı") {
+
+			if strings.Contains(string(body), "Sayfa Bulunamadı") || strings.Contains(string(body), "The link you followed may be broken, or the page may have been removed") {
 				color.Green("Possible Takeover: " + socialLink + " at " + foundLink)
-
 			}
-
 		}
+
+		// TikTok
 		if strings.Contains(domain, "tiktok.com") {
 			if strings.Count(strings.Replace(socialLink, "www.", "", -1), ".") > 1 {
 				continue
@@ -145,8 +155,9 @@ func checkTakeover(socialLinks []string) {
 				color.Green("Possible Takeover: " + socialLink + " at " + foundLink)
 			}
 		}
-		if strings.Contains(domain, "instagram.com") {
 
+		// Instagram
+		if strings.Contains(domain, "instagram.com") {
 			if strings.Count(strings.Replace(socialLink, "www.", "", -1), ".") > 1 {
 				continue
 			}
@@ -172,13 +183,15 @@ func checkTakeover(socialLinks []string) {
 				color.Green("Possible Takeover: " + socialLink + " at " + foundLink)
 			}
 		}
-		if strings.Contains(domain, "twitter.com") {
+
+		// Twitter (X)
+		if strings.Contains(domain, "(?:twitter|[^\\w]x]).com") {
 			if strings.Count(strings.Replace(socialLink, "www.", "", -1), ".") > 1 {
 				continue
 			}
 			u, err := url.Parse(socialLink)
 			userName := u.Path
-			tempLink := "https://nitter.net" + userName
+			tempLink := "http://nitter.net" + userName
 			client := &http.Client{}
 			req, err := http.NewRequest("GET", tempLink, nil)
 			if err != nil {
@@ -198,7 +211,6 @@ func checkTakeover(socialLinks []string) {
 			}
 		}
 	}
-	return
 }
 
 func removeDuplicateStr(strSlice []string) []string {
@@ -229,6 +241,7 @@ func visitor(visitURL string, maxDepth int) []string {
 	if err != nil {
 		panic(err)
 	}
+
 	domain := u.Host
 	path := u.Path
 	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
@@ -243,6 +256,7 @@ func visitor(visitURL string, maxDepth int) []string {
 				socialLinks = append(socialLinks, e.Request.URL.String()+"|"+link)
 			}
 		}
+
 		if strings.Contains(linkDomain, domain) {
 			visitFlag := true
 			for _, extension := range denyList {
@@ -260,10 +274,9 @@ func visitor(visitURL string, maxDepth int) []string {
 				visitFlag = false
 			}
 
-			if visitFlag == true {
+			if visitFlag {
 				visitedLinks = append(visitedLinks, link)
 				e.Request.Visit(link)
-
 			}
 		}
 
