@@ -33,33 +33,57 @@ func main() {
 	/_/     \_\
 	utkusen.com
 `)
+
+	url := flag.String("u", "", "A singular URL")
 	urlFile := flag.String("f", "", "Path of the URL file")
-	numWorker := flag.Int("w", 5, "Number of worker.")
+	agent := flag.String("a", "", "The User-Agent to use in requests")
+	numWorker := flag.Int("w", 5, "Number of workers")
 	flag.Parse()
-	if *urlFile == "" {
-		fmt.Println("Please specify all arguments!")
+
+	// Require either a file or a URL string to run the tool
+	if *urlFile == "" && *url == "" {
+		fmt.Println("Please specify either a URL (-u) or a file of URLs (-f) to use the tool!")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
-	file, err := os.ReadFile(*urlFile)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	urls := strings.Split(string(file), "\n")
-	queue = len(urls)
-	fmt.Println("Total URLs:", queue)
-	wp := workerpool.New(*numWorker)
 
-	for _, url := range urls {
-		url := url
+	if *agent != "" {
+		userAgent = *agent
+	}
+
+	if *urlFile != "" {
+		// Pull URLs from the specified file
+		file, err := os.ReadFile(*urlFile)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		urls := strings.Split(string(file), "\n")
+
+		queue = len(urls)
+		fmt.Println("Total URLs:", queue)
+		wp := workerpool.New(*numWorker)
+
+		for _, url := range urls {
+			url := url
+			wp.Submit(func() {
+				fmt.Println("Checking:", url)
+				action(url)
+			})
+		}
+
+		wp.StopWait()
+	} else {
+		// Get the URL from the CLI arg
+		url := string(*url)
+		wp := workerpool.New(*numWorker)
 		wp.Submit(func() {
 			fmt.Println("Checking:", url)
 			action(url)
 		})
 
+		wp.StopWait()
 	}
-	wp.StopWait()
 
 	color.Cyan("Scan Completed")
 }
