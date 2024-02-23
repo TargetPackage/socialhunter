@@ -5,26 +5,12 @@ Currently, it supports Twitter, Facebook, Instagram and Tiktok without any API k
 
 [![asciicast](https://asciinema.org/a/wYMVXIHCxxOB3QPWq4Fe8Advn.svg)](https://asciinema.org/a/wYMVXIHCxxOB3QPWq4Fe8Advn)
 
-# Installation
-
-## From Binary
-
-You can download the pre-built binaries from the [releases](https://github.com/utkusen/socialhunter/releases) page and run. For example:
-
-```shell
-wget https://github.com/utkusen/socialhunter/releases/download/v0.1.1/socialhunter_0.1.1_Linux_amd64.tar.gz
-
-tar xzvf socialhunter_0.1.1_Linux_amd64.tar.gz
-
-./socialhunter --help
-```
-
-## From Source
+## Installation
 
 1. Install Go on your system
-2. Run: `go install github.com/utkusen/socialhunter@latest`
+2. Run: `go install github.com/TargetPackage/socialhunter@latest`
 
-# Usage
+## Usage
 
 socialhunter requires 2 parameters to run: 
 
@@ -34,6 +20,6 @@ socialhunter requires 2 parameters to run:
 
 # Donation
 
-Loved the project? You can buy me a coffee
+Love the project? You can buy the tool's creator `@utkusen` a coffee:
 
 <a href="https://www.buymeacoffee.com/utkusen" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
