@@ -76,13 +76,8 @@ func main() {
 	} else {
 		// Get the URL from the CLI arg
 		url := string(*url)
-		wp := workerpool.New(*numWorker)
-		wp.Submit(func() {
-			fmt.Println("Checking:", url)
-			action(url)
-		})
-
-		wp.StopWait()
+		fmt.Println("Checking:", url)
+		action(url)
 	}
 
 	color.Cyan("Scan Completed")
