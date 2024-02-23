@@ -77,7 +77,9 @@ func main() {
 		// Get the URL from the CLI arg
 		url := string(*url)
 		fmt.Println("Checking:", url)
-		action(url)
+		sl := visitor(url, 10)
+		checkTakeover(removeDuplicateStr(sl))
+		color.Magenta("Finished Checking: " + url)
 	}
 
 	color.Cyan("Scan Completed")
